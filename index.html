@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Image Base64 Encoder & Cipher GUI</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #eef2f5;
+      color: #333;
+      max-width: 900px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 2rem;
+      font-size: 2rem;
+      color: #1a202c;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+    input[type="file"], input[type="number"], textarea, button {
+      width: 100%;
+      padding: 0.5rem;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    textarea {
+      height: 120px;
+      resize: vertical;
+    }
+    button {
+      background: #3182ce;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 0.5rem;
+    }
+    button:hover {
+      background: #2b6cb0;
+    }
+    .controls {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-top: 0.5rem;
+    }
+    .controls > * {
+      flex: 1;
+    }
+    .preview-container {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .preview {
+      flex: 1;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: center;
+    }
+    .preview img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Image Base64 Encoder & Cipher</h1>
+
+  <div class="card">
+    <label for="imageInput">1. Pilih atau Upload Gambar</label>
+    <input type="file" id="imageInput" accept="image/*" />
+    <button id="encodeBtn">Encode ke Base64</button>
+  </div>
+
+  <div class="card">
+    <label for="base64Text">2. Hasil Base64 (Textarea)</label>
+    <textarea id="base64Text" readonly></textarea>
+    <div class="preview-container">
+      <div class="preview">
+        <strong>Preview Base64</strong>
+        <img id="previewBase64" alt="Base64 Preview" />
+      </div>
+      <div class="preview">
+        <strong>Preview Cipher</strong>
+        <img id="previewCipher" alt="Cipher Preview" />
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <label>3. Caesar Cipher (Opsional)</label>
+    <div class="controls">
+      <input type="number" id="shiftInput" value="3" placeholder="Shift Caesar" />
+      <button id="encryptBtn">Encrypt</button>
+      <button id="decryptBtn">Decrypt</button>
+    </div>
+    <label for="cipherText" style="margin-top:1rem;">Hasil Cipher (Textarea)</label>
+    <textarea id="cipherText" readonly></textarea>
+  </div>
+
+  <div class="card">
+    <label>4. Decode Cipher & Tampilkan Gambar</label>
+    <button id="decodeCipherBtn">Decode & Preview</button>
+  </div>
+
+  <script>
+    const imageInput = document.getElementById('imageInput');
+    const encodeBtn = document.getElementById('encodeBtn');
+    const base64Text = document.getElementById('base64Text');
+    const previewBase64 = document.getElementById('previewBase64');
+    const previewCipher = document.getElementById('previewCipher');
+    const shiftInput = document.getElementById('shiftInput');
+    const encryptBtn = document.getElementById('encryptBtn');
+    const decryptBtn = document.getElementById('decryptBtn');
+    const cipherText = document.getElementById('cipherText');
+    const decodeCipherBtn = document.getElementById('decodeCipherBtn');
+
+    let rawBase64 = '';
+
+    encodeBtn.addEventListener('click', () => {
+      const file = imageInput.files[0];
+      if (!file) return alert('Silakan pilih gambar terlebih dahulu.');
+      const reader = new FileReader();
+      reader.onload = () => {
+        rawBase64 = reader.result.split(',')[1];
+        base64Text.value = rawBase64;
+        cipherText.value = '';
+        previewBase64.src = reader.result;
+        previewCipher.src = '';
+      };
+      reader.readAsDataURL(file);
+    });
+
+    function caesar(str, shift) {
+      return Array.from(str).map(ch => {
+        const code = ch.charCodeAt(0);
+        if (code >= 32 && code <= 126) {
+          let shifted = ((code - 32 + shift) % 95 + 95) % 95 + 32;
+          return String.fromCharCode(shifted);
+        }
+        return ch;
+      }).join('');
+    }
+
+    encryptBtn.addEventListener('click', () => {
+      if (!base64Text.value) return alert('Encode Base64 dulu!');
+      const shift = parseInt(shiftInput.value, 10) || 0;
+      const cipher = caesar(base64Text.value, shift);
+      cipherText.value = cipher;
+      previewCipher.src = 'data:image/*;base64,' + cipher;
+    });
+
+    decryptBtn.addEventListener('click', () => {
+      if (!cipherText.value) return alert('Belum ada cipher.');
+      const shift = parseInt(shiftInput.value, 10) || 0;
+      const decoded = caesar(cipherText.value, -shift);
+      base64Text.value = decoded;
+      previewCipher.src = '';
+    });
+
+    decodeCipherBtn.addEventListener('click', () => {
+      let text = cipherText.value || base64Text.value;
+      if (!text) return alert('Tidak ada data untuk decode.');
+      let decrypted = cipherText.value ? caesar(cipherText.value, -parseInt(shiftInput.value, 10) || 0) : text;
+      previewCipher.src = 'data:image/*;base64,' + decrypted;
+    });
+  </script>
+</body>
+</html>
